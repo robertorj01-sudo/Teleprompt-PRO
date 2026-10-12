@@ -28,15 +28,23 @@ export function useVideoRecorder() {
   const startRecording = useCallback(async () => {
     setError(null);
     try {
-      // Solicita câmera e microfone
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          facingMode: 'user',
-        },
-        audio: true,
-      });
+      let stream: MediaStream;
+      try {
+        // Solicita câmera (compatível com webcams de notebook 720p/1080p e celulares) e microfone
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: true,
+        });
+      } catch {
+        // Fallback universal para qualquer webcam de notebook
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+      }
 
       streamRef.current = stream;
       chunksRef.current = [];
@@ -50,7 +58,7 @@ export function useVideoRecorder() {
         mimeType = 'video/webm';
       }
       if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = ''; // Deixa o navegador escolher o padrão
+        mimeType = ''; // Deixa o navegador escolher o padrão (ex: video/mp4 no Safari)
       }
 
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
@@ -69,7 +77,7 @@ export function useVideoRecorder() {
         setRecordedBlob(finalBlob);
         setRecordedVideoUrl(url);
 
-        // Encerra as faixas da câmera para liberar luz do hardware
+        // Encerra as faixas da gravação para liberar o hardware
         if (streamRef.current) {
           streamRef.current.getTracks().forEach((t) => t.stop());
           streamRef.current = null;

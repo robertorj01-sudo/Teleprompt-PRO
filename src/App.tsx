@@ -149,6 +149,11 @@ export default function App() {
   // Gravador de Vídeo e Áudio Integrado (MediaRecorder API)
   const videoRecorder = useVideoRecorder();
 
+  const handleStartRecording = () => {
+    setSettings((prev) => ({ ...prev, webcamEnabled: true }));
+    videoRecorder.startRecording();
+  };
+
   const handleStopRecording = () => {
     videoRecorder.stopRecording();
     setIsRecordedVideoModalOpen(true);
@@ -646,7 +651,7 @@ export default function App() {
                 onToggleVoice={voiceControl.toggleListening}
                 onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
                 isRecording={videoRecorder.isRecording}
-                onStartRecording={videoRecorder.startRecording}
+                onStartRecording={handleStartRecording}
                 onStopRecording={handleStopRecording}
                 licenseStatus={licenseStatus}
                 onOpenUpgradeModal={openUpgradeModal}
@@ -684,7 +689,7 @@ export default function App() {
                 onToggleVoice={voiceControl.toggleListening}
                 onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
                 isRecording={videoRecorder.isRecording}
-                onStartRecording={videoRecorder.startRecording}
+                onStartRecording={handleStartRecording}
                 onStopRecording={handleStopRecording}
                 licenseStatus={licenseStatus}
                 onOpenUpgradeModal={openUpgradeModal}
