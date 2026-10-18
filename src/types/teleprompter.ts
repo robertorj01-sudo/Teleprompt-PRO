@@ -20,6 +20,30 @@ export interface CueLineConfig {
   opacity: number;
 }
 
+export type VideoFilterId =
+  | 'normal'
+  | 'beauty'
+  | 'cinema-warm'
+  | 'bw-studio'
+  | 'vibrant'
+  | 'vintage'
+  | 'cool-slate'
+  | 'golden-hour'
+  | 'high-contrast'
+  | 'sepia-classic'
+  | 'cyber-neon'
+  | 'dramatic-shadows';
+
+export interface VideoFilterDef {
+  id: VideoFilterId;
+  namePt: string;
+  nameEn: string;
+  cssFilter: string;
+  descriptionPt: string;
+  descriptionEn: string;
+  accentColor: string;
+}
+
 export interface TeleprompterSettings {
   speed: number;             // 1 a 100
   fontSize: number;          // 20 a 110 px
@@ -37,6 +61,7 @@ export interface TeleprompterSettings {
   showStatsOverlay: boolean;
   webcamEnabled: boolean;
   webcamOpacity: number;
+  videoFilter: VideoFilterId; // Filtro de vídeo profissional
 }
 
 export interface SavedScript {

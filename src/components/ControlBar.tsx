@@ -30,7 +30,10 @@ import {
   Video,
   Square,
   Lock,
+  Sparkles,
+  Check,
 } from 'lucide-react';
+import { VIDEO_FILTERS, getVideoFilterDef } from '../utils/videoFilters';
 
 interface ControlBarProps {
   lang: AppLanguage;
@@ -523,7 +526,8 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
         {/* ABA 4: ESTÚDIO & ESPELHO */}
         {activeTab === 'studio' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
             {/* Espelhamento Óptico (Flip X / Flip Y) */}
             <div className="bg-neutral-800/40 p-3 rounded-xl border border-neutral-800">
               <div className="flex items-center justify-between mb-2">
@@ -687,7 +691,55 @@ export const ControlBar: React.FC<ControlBarProps> = ({
               </button>
             </div>
           </div>
-        )}
+
+          {/* Seção dos 12 Filtros de Vídeo */}
+          <div className="mt-4 pt-3 border-t border-neutral-800/80">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-neutral-200">
+                  {isEn ? '12 Video Color Grading Filters' : '12 Variações de Filtros de Vídeo'}
+                </span>
+                <span className="text-[11px] text-amber-300 font-mono">
+                  {isEn
+                    ? getVideoFilterDef(settings.videoFilter).nameEn
+                    : getVideoFilterDef(settings.videoFilter).namePt}
+                </span>
+              </div>
+              <span className="text-[11px] text-neutral-400 italic hidden sm:inline">
+                {isEn
+                  ? getVideoFilterDef(settings.videoFilter).descriptionEn
+                  : getVideoFilterDef(settings.videoFilter).descriptionPt}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 custom-scrollbar">
+              {VIDEO_FILTERS.map((f) => {
+                const isSelected = (settings.videoFilter || 'normal') === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => updateField('videoFilter', f.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 border ${
+                      isSelected
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-sm font-semibold ring-1 ring-amber-500/30'
+                        : 'bg-neutral-800/60 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-neutral-700/60'
+                    }`}
+                    title={isEn ? f.descriptionEn : f.descriptionPt}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: f.accentColor }}
+                    />
+                    <span>{isEn ? f.nameEn : f.namePt}</span>
+                    {isSelected && <Check className="w-3 h-3 text-amber-400 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

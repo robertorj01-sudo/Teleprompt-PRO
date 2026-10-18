@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Download,
@@ -7,9 +7,12 @@ import {
   Play,
   RotateCcw,
   CheckCircle2,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { formatTime } from '../utils/textUtils';
-import { LicenseStatus } from '../types/teleprompter';
+import { LicenseStatus, VideoFilterId } from '../types/teleprompter';
+import { VIDEO_FILTERS, getVideoFilterCss, getVideoFilterDef } from '../utils/videoFilters';
 import { AppLanguage } from '../utils/i18n';
 
 interface RecordedVideoModalProps {
@@ -19,6 +22,7 @@ interface RecordedVideoModalProps {
   videoUrl: string | null;
   durationSeconds: number;
   licenseStatus: LicenseStatus;
+  initialFilter?: VideoFilterId;
   onDownload: () => void;
   onOpenUpgradeModal: () => void;
   onDiscard: () => void;
@@ -31,29 +35,34 @@ export const RecordedVideoModal: React.FC<RecordedVideoModalProps> = ({
   videoUrl,
   durationSeconds,
   licenseStatus,
+  initialFilter = 'normal',
   onDownload,
   onOpenUpgradeModal,
   onDiscard,
 }) => {
-  if (!isOpen || !videoUrl) return null;
-
+  const [selectedFilter, setSelectedFilter] = useState<VideoFilterId>(initialFilter);
   const isEn = lang === 'en';
 
+  if (!isOpen || !videoUrl) return null;
+
+  const activeFilterDef = getVideoFilterDef(selectedFilter);
+  const filterCss = getVideoFilterCss(selectedFilter);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden text-neutral-100 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="relative w-full max-w-3xl bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden text-neutral-100 flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Play className="w-4 h-4 fill-current ml-0.5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-sm sm:text-base font-bold text-white">
                 {isEn ? 'Your Studio Recording is Ready' : 'Sua Gravação Está Pronta'}
               </h3>
               <p className="text-xs text-neutral-400">
-                {isEn ? 'Recorded duration: ' : 'Duração gravada: '}
+                {isEn ? 'Duration: ' : 'Duração: '}
                 <span className="font-mono text-amber-400 font-bold">{formatTime(durationSeconds)}</span>
               </p>
             </div>
@@ -67,15 +76,73 @@ export const RecordedVideoModal: React.FC<RecordedVideoModalProps> = ({
           </button>
         </div>
 
-        {/* Video Player Preview */}
-        <div className="p-6 flex flex-col items-center gap-4">
+        {/* Video Player Preview with Live Filters */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex flex-col items-center gap-4">
           <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-neutral-800 shadow-inner relative flex items-center justify-center">
             <video
               src={videoUrl}
               controls
               playsInline
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain transition-all duration-300"
+              style={{ filter: filterCss }}
             />
+
+            {/* Filter Badge inside preview */}
+            {selectedFilter !== 'normal' && (
+              <div className="absolute top-3 left-3 pointer-events-none z-10">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-xs font-medium text-amber-300 border border-amber-400/30 shadow-lg">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: activeFilterDef.accentColor }}
+                  />
+                  <span>{isEn ? activeFilterDef.nameEn : activeFilterDef.namePt}</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* 12 Video Filters Selector Strip */}
+          <div className="w-full bg-neutral-950/70 border border-neutral-800 rounded-2xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-neutral-200">
+                  {isEn ? '12 Video Color Grading Filters' : '12 Variações de Filtros de Vídeo'}
+                </span>
+              </div>
+              <span className="text-[11px] text-neutral-400 font-mono">
+                {isEn ? activeFilterDef.nameEn : activeFilterDef.namePt}
+              </span>
+            </div>
+
+            {/* Filter Pills Grid / Horizontal Scroll */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 custom-scrollbar">
+              {VIDEO_FILTERS.map((f) => {
+                const isSelected = selectedFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setSelectedFilter(f.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 border ${
+                      isSelected
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm font-semibold'
+                        : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-200 border-neutral-800'
+                    }`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: f.accentColor }}
+                    />
+                    <span>{isEn ? f.nameEn : f.namePt}</span>
+                    {isSelected && <Check className="w-3 h-3 text-amber-400 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-[11px] text-neutral-400 italic">
+              {isEn ? activeFilterDef.descriptionEn : activeFilterDef.descriptionPt}
+            </p>
           </div>
 
           {/* Banner de Condição Grátis vs PRO */}
@@ -93,11 +160,11 @@ export const RecordedVideoModal: React.FC<RecordedVideoModalProps> = ({
                 <p className="text-neutral-400 leading-relaxed">
                   {isEn ? (
                     <>
-                      You can record and preview your video on the Free tier. To download the full HD video file, unlock the <strong>Lifetime PRO Deal ($29 One-Time)</strong> or redeem your AppSumo code.
+                      You can record and preview your video with all 12 filters on the Free tier. To download the full HD video file, unlock the <strong>Lifetime PRO Deal ($29 One-Time)</strong> or redeem your AppSumo code.
                     </>
                   ) : (
                     <>
-                      Na versão gratuita você pode testar e assistir à prévia. Para baixar o arquivo de vídeo original em Full HD, adquira a <strong>Licença Vitalícia (R$ 97,00)</strong> — sem mensalidades.
+                      Na versão gratuita você pode testar todos os 12 filtros e assistir à prévia. Para baixar o arquivo de vídeo original em Full HD, adquira a <strong>Licença Vitalícia (R$ 97,00)</strong> — sem mensalidades.
                     </>
                   )}
                 </p>
@@ -119,11 +186,11 @@ export const RecordedVideoModal: React.FC<RecordedVideoModalProps> = ({
               <span>
                 {isEn ? (
                   <>
-                    Your <strong>Lifetime PRO License</strong> is active. High-definition video download is unlocked.
+                    Your <strong>Lifetime PRO License</strong> is active. High-definition video download with filters is unlocked.
                   </>
                 ) : (
                   <>
-                    Você possui a <strong>Licença PRO Vitalícia</strong>. O download do vídeo em alta definição está liberado.
+                    Você possui a <strong>Licença PRO Vitalícia</strong>. O download do vídeo em alta definição com filtros está liberado.
                   </>
                 )}
               </span>
@@ -132,7 +199,7 @@ export const RecordedVideoModal: React.FC<RecordedVideoModalProps> = ({
         </div>
 
         {/* Actions Footer */}
-        <div className="px-6 py-4 border-t border-neutral-800 bg-neutral-950 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-3.5 border-t border-neutral-800 bg-neutral-950 flex flex-col sm:flex-row items-center justify-between gap-3">
           <button
             onClick={() => {
               const msg = isEn

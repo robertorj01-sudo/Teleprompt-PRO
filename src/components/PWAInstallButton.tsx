@@ -20,11 +20,12 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'pt' 
     return (
       <button
         onClick={install}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
-        title={isEn ? 'Install as an app on your device' : 'Instalar como aplicativo no seu dispositivo'}
+        className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+        title={isEn ? 'Install App on your device' : 'Instalar App no seu dispositivo'}
+        aria-label={isEn ? 'Install App' : 'Instalar App'}
       >
         <Download className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">{isEn ? 'Install App' : 'Instalar App'}</span>
+        <span className="hidden md:inline">{isEn ? 'Install' : 'Instalar'}</span>
       </button>
     );
   }
@@ -34,10 +35,12 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ lang = 'pt' 
       <>
         <button
           onClick={() => setShowIOSGuide(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-medium transition-all cursor-pointer"
+          className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 text-xs font-medium transition-all cursor-pointer shrink-0"
+          title={isEn ? 'Install on iPhone / iPad' : 'Instalar no iPhone / iPad'}
+          aria-label={isEn ? 'Install on iOS' : 'Instalar no iOS'}
         >
           <Smartphone className="w-3.5 h-3.5 text-neutral-400" />
-          <span className="hidden sm:inline">{isEn ? 'Install on iOS' : 'Instalar no iOS'}</span>
+          <span className="hidden md:inline">{isEn ? 'iOS App' : 'App iOS'}</span>
         </button>
 
         {showIOSGuide && (

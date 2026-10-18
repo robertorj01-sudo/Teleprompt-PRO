@@ -50,6 +50,7 @@ const DEFAULT_SETTINGS: TeleprompterSettings = {
   showStatsOverlay: true,
   webcamEnabled: false,
   webcamOpacity: 1,
+  videoFilter: 'normal',
 };
 
 export default function App() {
