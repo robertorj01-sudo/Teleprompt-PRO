@@ -15,6 +15,8 @@ interface PrompterDisplayProps {
   onManualScroll: () => void;
   isCountingDown: boolean;
   countdownValue: number;
+  onSkipCountdown?: () => void;
+  isPlaying?: boolean;
   isRecording?: boolean;
   recordingDuration?: number;
   onStopRecording?: () => void;
@@ -31,6 +33,8 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
   onManualScroll,
   isCountingDown,
   countdownValue,
+  onSkipCountdown,
+  isPlaying = false,
   isRecording = false,
   recordingDuration = 0,
   onStopRecording,
@@ -263,17 +267,17 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
         </>
       )}
 
-      {/* Container de Rolagem do Texto */}
+      {/* Container de Rolagem do Texto - scroll-behavior padrão (auto) para atualização instantânea a 60fps */}
       <div
         ref={containerRef}
         onScroll={onManualScroll}
         tabIndex={0}
-        className="w-full h-full overflow-y-scroll overflow-x-hidden no-scrollbar outline-none scroll-smooth"
+        className="w-full h-full overflow-y-scroll overflow-x-hidden no-scrollbar outline-none"
         style={{
           paddingLeft: `${settings.horizontalMargin}%`,
           paddingRight: `${settings.horizontalMargin}%`,
           paddingTop: `${settings.cueLine.positionPercent}vh`,
-          paddingBottom: '80vh',
+          paddingBottom: '85vh',
         }}
       >
         <div
@@ -379,10 +383,14 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
         </div>
       </div>
 
-      {/* Contagem Regressiva de Início (3, 2, 1, GO!) */}
+      {/* Contagem Regressiva de Início (3, 2, 1, GO!) - Clicável para iniciar imediatamente */}
       {isCountingDown && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm pointer-events-auto">
-          <div className="flex flex-col items-center animate-pulse text-center">
+        <div
+          onClick={onSkipCountdown}
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm pointer-events-auto cursor-pointer"
+          title={isEn ? 'Click to start immediately' : 'Clique para iniciar imediatamente'}
+        >
+          <div className="flex flex-col items-center animate-pulse text-center select-none">
             <span
               className="text-8xl md:text-9xl font-extrabold tracking-tighter tabular-nums"
               style={{ color: cueColor }}
@@ -397,6 +405,9 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
                 : isEn
                 ? 'On Air / Rolling!'
                 : 'Gravando / No Ar!'}
+            </span>
+            <span className="mt-3 text-xs text-neutral-400 bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full border border-white/20 transition-all">
+              {isEn ? 'Click anywhere or press Space to roll now' : 'Clique ou pressione Espaço para iniciar agora'}
             </span>
           </div>
         </div>

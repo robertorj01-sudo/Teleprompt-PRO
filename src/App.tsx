@@ -183,6 +183,10 @@ export default function App() {
     localStorage.setItem('teleprompter_settings', JSON.stringify(settings));
   }, [settings]);
 
+  const handleEndReached = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
   // Hook de Rolagem Suave
   const {
     containerRef,
@@ -194,9 +198,7 @@ export default function App() {
   } = useSmoothScroll({
     speed: settings.speed,
     isPlaying: isPlaying && !isCountingDown,
-    onEndReached: () => {
-      setIsPlaying(false);
-    },
+    onEndReached: handleEndReached,
   });
 
   // Métricas do texto
@@ -242,11 +244,12 @@ export default function App() {
 
   // Iniciar / Pausar com suporte a contagem regressiva
   const handleTogglePlay = useCallback(() => {
-    if (isPlaying) {
+    if (isPlaying || isCountingDown) {
       setIsPlaying(false);
       setIsCountingDown(false);
       if (countdownTimerRef.current) {
         clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
       }
       return;
     }
@@ -262,7 +265,10 @@ export default function App() {
         current -= 1;
         setCountdownValue(current);
         if (current <= 0) {
-          if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+          }
           setIsCountingDown(false);
           setIsPlaying(true);
         }
@@ -270,7 +276,17 @@ export default function App() {
     } else {
       setIsPlaying(true);
     }
-  }, [isPlaying, settings.countdownSeconds]);
+  }, [isPlaying, isCountingDown, settings.countdownSeconds]);
+
+  // Pular contagem regressiva e iniciar imediatamente
+  const handleSkipCountdown = useCallback(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setIsCountingDown(false);
+    setIsPlaying(true);
+  }, []);
 
   // Reiniciar do topo
   const handleRestart = useCallback(() => {
@@ -613,6 +629,8 @@ export default function App() {
                 onManualScroll={handleManualScroll}
                 isCountingDown={isCountingDown}
                 countdownValue={countdownValue}
+                onSkipCountdown={handleSkipCountdown}
+                isPlaying={isPlaying}
                 isRecording={videoRecorder.isRecording}
                 recordingDuration={videoRecorder.recordingDuration}
                 onStopRecording={handleStopRecording}
