@@ -26,6 +26,7 @@ import { UpgradeProModal } from './components/UpgradeProModal';
 import { RecordedVideoModal } from './components/RecordedVideoModal';
 import { MobileTestModal } from './components/MobileTestModal';
 import { AppSumoModal } from './components/AppSumoModal';
+import { BackdropModal } from './components/BackdropModal';
 
 const DEFAULT_SETTINGS: TeleprompterSettings = {
   speed: 28,
@@ -51,6 +52,9 @@ const DEFAULT_SETTINGS: TeleprompterSettings = {
   webcamEnabled: false,
   webcamOpacity: 1,
   videoFilter: 'normal',
+  backdropId: 'none',
+  backdropBlur: 4,
+  backdropOverlay: 0.65,
 };
 
 export default function App() {
@@ -165,6 +169,7 @@ export default function App() {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
   const [isGooglePlayOpen, setIsGooglePlayOpen] = useState<boolean>(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+  const [isBackdropModalOpen, setIsBackdropModalOpen] = useState<boolean>(false);
 
   // Salva no LocalStorage sempre que houver alterações
   useEffect(() => {
@@ -586,6 +591,7 @@ export default function App() {
           onOpenAppSumo={() => setIsAppSumoOpen(true)}
           onOpenMobileTest={() => setIsMobileTestOpen(true)}
           onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
+          onOpenBackdrops={() => setIsBackdropModalOpen(true)}
           isListeningVoice={voiceControl.isListening}
           onToggleVoice={voiceControl.toggleListening}
           onToggleFullscreen={toggleFullscreen}
@@ -666,6 +672,7 @@ export default function App() {
                   setCurrentView('editor');
                 }}
                 onOpenShortcuts={() => setIsShortcutsOpen(true)}
+                onOpenBackdropModal={() => setIsBackdropModalOpen(true)}
                 isListeningVoice={voiceControl.isListening}
                 onToggleVoice={voiceControl.toggleListening}
                 onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
@@ -704,6 +711,7 @@ export default function App() {
                 formattedElapsed={formattedElapsed}
                 formattedEstimated={formattedEstimated}
                 scrollProgress={scrollProgress}
+                onOpenBackdropModal={() => setIsBackdropModalOpen(true)}
                 isListeningVoice={voiceControl.isListening}
                 onToggleVoice={voiceControl.toggleListening}
                 onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
@@ -799,6 +807,15 @@ export default function App() {
           videoRecorder.resetRecording();
           setIsRecordedVideoModalOpen(false);
         }}
+      />
+
+      {/* Modal de Panos de Fundo & Cenários Virtuais */}
+      <BackdropModal
+        isOpen={isBackdropModalOpen}
+        onClose={() => setIsBackdropModalOpen(false)}
+        lang={lang}
+        settings={settings}
+        onUpdateSettings={setSettings}
       />
     </div>
   );

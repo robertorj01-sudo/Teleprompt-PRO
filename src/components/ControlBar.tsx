@@ -32,8 +32,10 @@ import {
   Lock,
   Sparkles,
   Check,
+  Image,
 } from 'lucide-react';
 import { VIDEO_FILTERS, getVideoFilterDef } from '../utils/videoFilters';
+import { BACKDROP_THEMES, getBackdropDef } from '../utils/backdropThemes';
 
 interface ControlBarProps {
   lang: AppLanguage;
@@ -50,6 +52,7 @@ interface ControlBarProps {
   formattedElapsed: string;
   formattedEstimated: string;
   scrollProgress: number;
+  onOpenBackdropModal?: () => void;
   isListeningVoice?: boolean;
   onToggleVoice?: () => void;
   onOpenVoiceGuide?: () => void;
@@ -73,6 +76,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   formattedElapsed,
   formattedEstimated,
   scrollProgress,
+  onOpenBackdropModal,
   isListeningVoice = false,
   onToggleVoice,
   onOpenVoiceGuide,
@@ -83,7 +87,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   onStopRecording,
 }) => {
   const isEn = lang === 'en';
-  const [activeTab, setActiveTab] = useState<'quick' | 'typography' | 'studio' | 'cue'>('quick');
+  const [activeTab, setActiveTab] = useState<'quick' | 'typography' | 'cue' | 'backdrop' | 'studio'>('quick');
 
   const updateField = <K extends keyof TeleprompterSettings>(
     field: K,
@@ -123,7 +127,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
         </div>
 
         {/* Abas secundárias de configuração */}
-        <div className="flex items-center gap-1 bg-neutral-800/60 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-neutral-800/60 p-1 rounded-lg flex-wrap">
           <button
             onClick={() => setActiveTab('quick')}
             className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
@@ -155,6 +159,19 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             <span className="flex items-center gap-1.5">
               <Eye className="w-3.5 h-3.5" />
               <span>{isEn ? 'Cue Line' : 'Linha Guia'}</span>
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('backdrop')}
+            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+              activeTab === 'backdrop'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm font-semibold'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Image className="w-3.5 h-3.5 text-amber-400" />
+              <span>{isEn ? 'Backdrops' : 'Cenários'}</span>
             </span>
           </button>
           <button
@@ -524,7 +541,142 @@ export const ControlBar: React.FC<ControlBarProps> = ({
           </div>
         )}
 
-        {/* ABA 4: ESTÚDIO & ESPELHO */}
+        {/* ABA: PANO DE FUNDO & CENÁRIOS VIRTUAIS */}
+        {activeTab === 'backdrop' && (
+          <div className="space-y-4">
+            {/* Header com indicador do cenário atual e botão da galeria completa */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-neutral-800/60">
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-neutral-200">
+                  {isEn ? 'Virtual Studio Backdrops' : 'Panos de Fundo & Cenários de Estúdio'}
+                </span>
+                <span className="text-[11px] text-amber-300 font-mono">
+                  · {isEn ? getBackdropDef(settings.backdropId).nameEn : getBackdropDef(settings.backdropId).namePt}
+                </span>
+              </div>
+
+              {onOpenBackdropModal && (
+                <button
+                  onClick={onOpenBackdropModal}
+                  className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-amber-300 text-xs font-medium border border-neutral-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>{isEn ? 'Full Gallery' : 'Galeria Completa'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Carrossel Horizontal de Miniaturas */}
+            <div className="flex items-center gap-2.5 overflow-x-auto pb-2 custom-scrollbar">
+              {BACKDROP_THEMES.map((theme) => {
+                const isSelected = settings.backdropId === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    onClick={() => {
+                      onUpdateSettings((prev) => ({
+                        ...prev,
+                        backdropId: theme.id,
+                        backdropBlur: theme.recommendedBlur,
+                        backdropOverlay: theme.recommendedOverlay,
+                      }));
+                    }}
+                    className={`flex flex-col rounded-xl overflow-hidden border text-left transition-all shrink-0 w-36 sm:w-44 cursor-pointer bg-neutral-950/70 group ${
+                      isSelected
+                        ? 'border-amber-400 ring-2 ring-amber-400/40 shadow-md'
+                        : 'border-neutral-800 hover:border-neutral-700 hover:bg-neutral-800/40'
+                    }`}
+                  >
+                    <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+                      {theme.imageUrl ? (
+                        <img
+                          src={theme.imageUrl}
+                          alt={isEn ? theme.nameEn : theme.namePt}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-black text-neutral-500 text-[10px] font-mono">
+                          {isEn ? 'Pure Black' : 'Preto Neutro'}
+                        </div>
+                      )}
+                      {isSelected && (
+                        <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-500 text-black flex items-center justify-center font-bold">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                      <div className="absolute bottom-1 left-2 right-2 truncate">
+                        <span className="text-[10px] font-bold text-white drop-shadow-sm truncate block">
+                          {isEn ? theme.nameEn : theme.namePt}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Ajustes de Lente (Blur) e Contraste (Overlay) */}
+            {settings.backdropId !== 'none' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Desfoque Cinemático */}
+                <div className="bg-neutral-800/40 p-3 rounded-xl border border-neutral-800 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-neutral-200">
+                      {isEn ? 'Lens Blur (Depth of Field)' : 'Desfoque da Lente (Profundidade)'}
+                    </span>
+                    <span className="font-mono text-amber-400 font-bold tabular-nums">
+                      {settings.backdropBlur}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="14"
+                    step="1"
+                    value={settings.backdropBlur}
+                    onChange={(e) => updateField('backdropBlur', Number(e.target.value))}
+                    className="w-full accent-amber-500 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
+                    <span>{isEn ? 'Sharp (0px)' : 'Nítido (0px)'}</span>
+                    <span>{isEn ? 'Natural (4px)' : 'Natural (4px)'}</span>
+                    <span>{isEn ? 'Bokeh (14px)' : 'Bokeh (14px)'}</span>
+                  </div>
+                </div>
+
+                {/* Escurecimento para Leitura */}
+                <div className="bg-neutral-800/40 p-3 rounded-xl border border-neutral-800 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-neutral-200">
+                      {isEn ? 'Darkness / Text Contrast' : 'Escurecimento / Contraste do Texto'}
+                    </span>
+                    <span className="font-mono text-cyan-400 font-bold tabular-nums">
+                      {Math.round(settings.backdropOverlay * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="0.9"
+                    step="0.05"
+                    value={settings.backdropOverlay}
+                    onChange={(e) => updateField('backdropOverlay', Number(e.target.value))}
+                    className="w-full accent-cyan-500 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
+                    <span>{isEn ? 'Vibrant (20%)' : 'Vívido (20%)'}</span>
+                    <span>{isEn ? 'Balanced (65%)' : 'Equilibrado (65%)'}</span>
+                    <span>{isEn ? 'Max Contrast (90%)' : 'Máximo (90%)'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ABA 5: ESTÚDIO & ESPELHO */}
         {activeTab === 'studio' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-center">

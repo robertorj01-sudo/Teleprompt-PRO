@@ -18,6 +18,7 @@ import {
   MoreVertical,
   X,
   Download,
+  Image,
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 import { LicenseStatus } from '../types/teleprompter';
@@ -35,6 +36,7 @@ interface NavbarProps {
   onOpenAppSumo?: () => void;
   onOpenMobileTest?: () => void;
   onOpenVoiceGuide?: () => void;
+  onOpenBackdrops?: () => void;
   isListeningVoice?: boolean;
   onToggleVoice?: () => void;
   onToggleFullscreen: () => void;
@@ -56,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAppSumo,
   onOpenMobileTest,
   onOpenVoiceGuide,
+  onOpenBackdrops,
   isListeningVoice = false,
   onToggleVoice,
   onToggleFullscreen,
@@ -143,6 +146,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             <FolderOpen className="w-3.5 h-3.5" />
             <span>{isEn ? 'Library' : 'Biblioteca'}</span>
           </button>
+
+          {onOpenBackdrops && (
+            <button
+              onClick={onOpenBackdrops}
+              className="px-2.5 py-1.5 rounded-lg text-xs md:text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors flex items-center gap-1.5 cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
+              title={isEn ? 'Virtual Studio Backdrops (Office, Boardroom, Library)' : 'Cenários e Panos de Fundo (Escritório, Sala de Reunião, Biblioteca)'}
+            >
+              <Image className="w-3.5 h-3.5 text-amber-400" />
+              <span>{isEn ? 'Backdrops' : 'Cenários'}</span>
+            </button>
+          )}
 
           {onOpenVoiceGuide && (
             <button
@@ -322,6 +336,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <FolderOpen className="w-4 h-4 text-amber-400" />
                   <span>{isEn ? 'Script Library' : 'Biblioteca de Roteiros'}</span>
                 </button>
+
+                {onOpenBackdrops && (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenBackdrops();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-amber-300 hover:bg-neutral-800 transition-colors text-left"
+                  >
+                    <Image className="w-4 h-4 text-amber-400" />
+                    <span>{isEn ? 'Virtual Backdrops' : 'Panos de Fundo & Cenários'}</span>
+                  </button>
+                )}
 
                 {onOpenVoiceGuide && (
                   <button

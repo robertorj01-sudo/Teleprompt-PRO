@@ -17,6 +17,7 @@ import {
   MicOff,
   Video,
   Square,
+  Image,
 } from 'lucide-react';
 
 interface FloatingHudProps {
@@ -30,6 +31,7 @@ interface FloatingHudProps {
   isFullscreen: boolean;
   onExitToEditor: () => void;
   onOpenShortcuts: () => void;
+  onOpenBackdropModal?: () => void;
   isListeningVoice?: boolean;
   onToggleVoice?: () => void;
   onOpenVoiceGuide?: () => void;
@@ -53,6 +55,7 @@ export const FloatingHud: React.FC<FloatingHudProps> = ({
   isFullscreen,
   onExitToEditor,
   onOpenShortcuts,
+  onOpenBackdropModal,
   isListeningVoice = false,
   onToggleVoice,
   isRecording = false,
@@ -248,6 +251,21 @@ export const FloatingHud: React.FC<FloatingHudProps> = ({
         >
           <Eye className="w-4 h-4" />
         </button>
+
+        {/* Pano de Fundo / Cenários */}
+        {onOpenBackdropModal && (
+          <button
+            onClick={onOpenBackdropModal}
+            className={`p-2 rounded-xl transition-colors cursor-pointer ${
+              settings.backdropId !== 'none'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white'
+            }`}
+            title={isEn ? 'Virtual Studio Backdrops (Office, Boardroom, Library)' : 'Cenários & Panos de Fundo (Escritório, Sala de Reunião, Biblioteca)'}
+          >
+            <Image className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Controle por Voz (Hands-Free) */}
         {onToggleVoice && (

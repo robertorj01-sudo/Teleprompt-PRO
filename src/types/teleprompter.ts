@@ -44,6 +44,28 @@ export interface VideoFilterDef {
   accentColor: string;
 }
 
+export type BackdropId =
+  | 'none'
+  | 'modern-office'
+  | 'boardroom'
+  | 'classic-library'
+  | 'podcast-studio'
+  | 'cozy-home-office';
+
+export interface BackdropDef {
+  id: BackdropId;
+  namePt: string;
+  nameEn: string;
+  categoryPt: string;
+  categoryEn: string;
+  descriptionPt: string;
+  descriptionEn: string;
+  imageUrl: string;
+  badge?: string;
+  recommendedBlur: number;
+  recommendedOverlay: number;
+}
+
 export interface TeleprompterSettings {
   speed: number;             // 1 a 100
   fontSize: number;          // 20 a 110 px
@@ -62,6 +84,9 @@ export interface TeleprompterSettings {
   webcamEnabled: boolean;
   webcamOpacity: number;
   videoFilter: VideoFilterId; // Filtro de vídeo profissional
+  backdropId: BackdropId;     // Pano de fundo virtual / estúdio
+  backdropBlur: number;       // 0 a 16 px (efeito bokeh de lente de câmera)
+  backdropOverlay: number;    // 0.2 a 0.95 (escurecimento para alto contraste de texto)
 }
 
 export interface SavedScript {

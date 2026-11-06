@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { TeleprompterSettings } from '../types/teleprompter';
 import { parseParagraphSegments, formatTime } from '../utils/textUtils';
+import { getBackdropDef } from '../utils/backdropThemes';
 import { AppLanguage } from '../utils/i18n';
 import { RotateCcw, CheckCircle2, Square } from 'lucide-react';
 
@@ -40,6 +41,10 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
   onStopRecording,
 }) => {
   const isEn = lang === 'en';
+
+  const backdropDef = useMemo(() => {
+    return getBackdropDef(settings.backdropId);
+  }, [settings.backdropId]);
 
   // Configuração de cores baseada no tema
   const themeStyles = useMemo(() => {
@@ -147,6 +152,29 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
         transition: 'transform 0.2s ease-in-out',
       }}
     >
+      {/* Pano de Fundo Fotográfico / Cenário Virtual de Estúdio */}
+      {backdropDef && backdropDef.imageUrl && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <img
+            src={backdropDef.imageUrl}
+            alt={backdropDef.namePt}
+            className="w-full h-full object-cover transition-all duration-700 ease-out"
+            style={{
+              filter: `blur(${settings.backdropBlur}px) scale(1.06)`,
+            }}
+          />
+          {/* Camada de Escurecimento para Alto Contraste do Texto */}
+          <div
+            className="absolute inset-0 bg-black transition-opacity duration-300"
+            style={{
+              opacity: settings.backdropOverlay,
+            }}
+          />
+          {/* Vinheta Suave de Vinco */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60 pointer-events-none" />
+        </div>
+      )}
+
       {/* Linha Guia de Leitura (Cue Line / Focus Marker) */}
       {settings.cueLine.enabled && (
         <div
@@ -272,7 +300,7 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
         ref={containerRef}
         onScroll={onManualScroll}
         tabIndex={0}
-        className="w-full h-full overflow-y-scroll overflow-x-hidden no-scrollbar outline-none"
+        className="relative z-10 w-full h-full overflow-y-scroll overflow-x-hidden no-scrollbar outline-none"
         style={{
           paddingLeft: `${settings.horizontalMargin}%`,
           paddingRight: `${settings.horizontalMargin}%`,
