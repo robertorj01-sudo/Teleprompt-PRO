@@ -108,3 +108,5 @@ export interface LicenseStatus {
   activatedAt?: number;
 }
 
+export const STRIPE_CHECKOUT_URL = 'https://buy.stripe.com/9B67sK3UFaBVc08cms5J600';
+

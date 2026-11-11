@@ -10,7 +10,7 @@ import {
   Flame,
   Tag,
 } from 'lucide-react';
-import { LicenseStatus } from '../types/teleprompter';
+import { LicenseStatus, STRIPE_CHECKOUT_URL } from '../types/teleprompter';
 import { AppLanguage } from '../utils/i18n';
 
 interface UpgradeProModalProps {
@@ -53,24 +53,25 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
     if (!trimmed || trimmed.length < 5) {
       setInputError(
         isEn
-          ? 'Please enter a valid AppSumo LTD code (e.g., AS-PRO-XXXXX-XXXXX) or License Key.'
-          : 'Insira um código AppSumo LTD válido (ex: AS-PRO-XXXXX-XXXXX) ou chave PRO.'
+          ? 'Please enter a valid License Key or Promo Code.'
+          : 'Insira uma chave de licença ou código válido.'
       );
       return;
     }
 
-    // Validate AppSumo format AS-PRO-XXXXX-XXXXX, APPSUMO-*, or PRO-* keys
+    // Validate license format
     const isValidFormat =
-      trimmed.startsWith('AS-PRO-') ||
-      trimmed.startsWith('APPSUMO') ||
       trimmed.startsWith('PRO-') ||
-      trimmed === 'APPSUMO2026';
+      trimmed.startsWith('AS-PRO-') ||
+      trimmed.startsWith('LTD-') ||
+      trimmed.startsWith('VIP-') ||
+      trimmed === 'PRO-VITALICIO-97';
 
-    if (!isValidFormat && trimmed.length < 8) {
+    if (!isValidFormat && trimmed.length < 6) {
       setInputError(
         isEn
-          ? 'Invalid code format. Use your AppSumo code (AS-PRO-...) or license key.'
-          : 'Formato inválido. Digite seu código AppSumo (AS-PRO-...) ou chave de licença.'
+          ? 'Invalid code format. Enter your license key.'
+          : 'Formato inválido. Digite sua chave de licença.'
       );
       return;
     }
@@ -88,7 +89,7 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
           <Flame className="w-4 h-4 fill-neutral-950" />
           <span>
             {isEn
-              ? 'Special Offer: Lifetime Deal (LTD) — Pay Once, Own Forever (No Subscriptions)'
+              ? 'Special Offer: Lifetime Access — Pay Once, Own Forever (No Subscriptions)'
               : 'Oferta Especial: Licença Vitalícia — Sem Mensalidades, Pague Uma Única Vez'}
           </span>
         </div>
@@ -100,8 +101,8 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
               <Crown className="w-3.5 h-3.5" />
               <span>
                 {isEn
-                  ? 'Teleprompter PRO — Lifetime Access & AppSumo Partner'
-                  : 'Teleprompter PRO — Compra Única & AppSumo LTD'}
+                  ? 'Teleprompter PRO — Lifetime License'
+                  : 'Teleprompter PRO — Acesso Vitalício'}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
@@ -149,7 +150,7 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
           </div>
         )}
 
-        {/* Conteúdo com Comparativo, Preço e Resgate AppSumo */}
+        {/* Conteúdo com Comparativo, Preço e Ativação de Chave */}
         <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-4 space-y-5">
           {/* Card de Preço em Destaque */}
           <div className="p-5 rounded-2xl bg-gradient-to-b from-neutral-800/80 to-neutral-900 border border-amber-500/30 relative overflow-hidden shadow-lg">
@@ -173,41 +174,35 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
                 </p>
               </div>
 
-              {/* Botão de Compra Principal */}
-              <button
-                onClick={handleSimulatePurchase}
-                disabled={isProcessingBuy || licenseStatus.isPro}
-                className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-extrabold text-sm tracking-wide transition-all shadow-xl shadow-amber-500/20 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap flex items-center justify-center gap-2"
-              >
-                {isProcessingBuy ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-neutral-950 border-t-transparent rounded-full animate-spin" />
-                    <span>{isEn ? 'Activating...' : 'Ativando Licença...'}</span>
-                  </>
-                ) : licenseStatus.isPro ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-950" />
-                    <span>{isEn ? 'Lifetime PRO Active' : 'Licença Vitalícia Ativa'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4 fill-current" />
-                    <span>{isEn ? 'Unlock Lifetime Deal ($29)' : 'Desbloquear Licença Vitalícia'}</span>
-                  </>
-                )}
-              </button>
+              {/* Botão de Compra Principal com Stripe */}
+              {licenseStatus.isPro ? (
+                <div className="px-6 py-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-extrabold text-sm tracking-wide whitespace-nowrap flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>{isEn ? 'Lifetime PRO Active' : 'Licença Vitalícia Ativa'}</span>
+                </div>
+              ) : (
+                <a
+                  href={STRIPE_CHECKOUT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-extrabold text-sm tracking-wide transition-all shadow-xl shadow-amber-500/20 active:scale-95 cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4 fill-current" />
+                  <span>{isEn ? 'Buy Lifetime Deal ($29 via Stripe)' : 'Comprar Licença Vitalícia (R$ 97)'}</span>
+                </a>
+              )}
             </div>
           </div>
 
-          {/* Box Oficial de Resgate de Código AppSumo / Chave de Licença */}
+          {/* Box Oficial de Ativação / Chave de Licença */}
           <div className="p-4 rounded-2xl bg-neutral-800/50 border border-amber-500/30 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-amber-400" />
                 <span>
                   {isEn
-                    ? 'Have an AppSumo Code or License Key? Redeem Here:'
-                    : 'Tem um Código AppSumo (LTD) ou Chave de Licença? Ative Aqui:'}
+                    ? 'Have a License Key or Coupon Code? Redeem Here:'
+                    : 'Tem uma Chave de Licença ou Cupom? Ative Aqui:'}
                 </span>
               </span>
               {licenseStatus.isPro && licenseStatus.licenseKey && (
@@ -226,8 +221,8 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
                     onChange={(e) => setLicenseInput(e.target.value)}
                     placeholder={
                       isEn
-                        ? 'Enter AppSumo Code (e.g. AS-PRO-XXXXX-XXXXX)'
-                        : 'Digite seu código (ex: AS-PRO-XXXXX-XXXXX ou PRO-VITALICIO-97)'
+                        ? 'Enter License Key (e.g. PRO-VITALICIO-97)'
+                        : 'Digite sua chave (ex: PRO-VITALICIO-97)'
                     }
                     className="flex-1 bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 uppercase"
                   />
@@ -235,7 +230,7 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
                     onClick={handleManualActivate}
                     className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-extrabold text-xs transition-colors cursor-pointer whitespace-nowrap"
                   >
-                    {isEn ? 'Redeem Code' : 'Ativar Código'}
+                    {isEn ? 'Activate Key' : 'Ativar Chave'}
                   </button>
                 </div>
                 {inputError && <p className="text-[11px] text-rose-400">{inputError}</p>}
@@ -249,11 +244,11 @@ export const UpgradeProModal: React.FC<UpgradeProModalProps> = ({
                 <p className="text-[10px] text-neutral-400">
                   {isEn ? (
                     <>
-                      AppSumo Sumo-lings: Paste your <strong>AS-PRO-...</strong> redemption code above for instant lifetime activation.
+                      Enter your activation key or promo code (e.g. <strong>PRO-VITALICIO-97</strong>) for instant lifetime access.
                     </>
                   ) : (
                     <>
-                      Compradores AppSumo ou PRO: Digite seu código <strong>AS-PRO-...</strong> ou <strong>PRO-VITALICIO-97</strong> para ativação imediata.
+                      Digite sua chave de ativação ou código de acesso (ex: <strong>PRO-VITALICIO-97</strong>) para liberação vitalícia imediata.
                     </>
                   )}
                 </p>

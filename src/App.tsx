@@ -25,7 +25,6 @@ import { VoiceCommandsModal } from './components/VoiceCommandsModal';
 import { UpgradeProModal } from './components/UpgradeProModal';
 import { RecordedVideoModal } from './components/RecordedVideoModal';
 import { MobileTestModal } from './components/MobileTestModal';
-import { AppSumoModal } from './components/AppSumoModal';
 import { BackdropModal } from './components/BackdropModal';
 
 const DEFAULT_SETTINGS: TeleprompterSettings = {
@@ -116,7 +115,7 @@ export default function App() {
   // Cronômetro
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
-  // Status da Licença PRO (Vitalícia / AppSumo LTD vs Grátis)
+  // Status da Licença PRO (Vitalícia vs Grátis)
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus>(() => {
     const saved = localStorage.getItem('teleprompter_license');
     if (saved) {
@@ -133,7 +132,6 @@ export default function App() {
   const [upgradeHighlight, setUpgradeHighlight] = useState<string | undefined>(undefined);
   const [isRecordedVideoModalOpen, setIsRecordedVideoModalOpen] = useState<boolean>(false);
   const [isMobileTestOpen, setIsMobileTestOpen] = useState<boolean>(false);
-  const [isAppSumoOpen, setIsAppSumoOpen] = useState<boolean>(false);
 
   const openUpgradeModal = (feature?: string) => {
     setUpgradeHighlight(feature);
@@ -588,7 +586,6 @@ export default function App() {
           onOpenLibrary={() => setIsLibraryOpen(true)}
           onOpenShortcuts={() => setIsShortcutsOpen(true)}
           onOpenGooglePlay={() => setIsGooglePlayOpen(true)}
-          onOpenAppSumo={() => setIsAppSumoOpen(true)}
           onOpenMobileTest={() => setIsMobileTestOpen(true)}
           onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
           onOpenBackdrops={() => setIsBackdropModalOpen(true)}
@@ -758,11 +755,6 @@ export default function App() {
         onClose={() => setIsMobileTestOpen(false)}
       />
 
-      <AppSumoModal
-        isOpen={isAppSumoOpen}
-        onClose={() => setIsAppSumoOpen(false)}
-      />
-
       <VoiceCommandsModal
         lang={lang}
         isOpen={isVoiceModalOpen}
@@ -776,7 +768,7 @@ export default function App() {
         interimTranscript={voiceControl.interimTranscript}
       />
 
-      {/* Modal de Upgrade / Ativação da Licença PRO Vitalícia & AppSumo LTD */}
+      {/* Modal de Upgrade / Ativação da Licença PRO Vitalícia */}
       <UpgradeProModal
         lang={lang}
         isOpen={isUpgradeModalOpen}

@@ -160,7 +160,7 @@ export const RecordedVideoModal: React.FC<RecordedVideoModalProps> = ({
                 <p className="text-neutral-400 leading-relaxed">
                   {isEn ? (
                     <>
-                      You can record and preview your video with all 12 filters on the Free tier. To download the full HD video file, unlock the <strong>Lifetime PRO Deal ($29 One-Time)</strong> or redeem your AppSumo code.
+                      You can record and preview your video with all 12 filters on the Free tier. To download the full HD video file, unlock the <strong>Lifetime PRO Deal ($29 One-Time)</strong> or activate your license key.
                     </>
                   ) : (
                     <>
