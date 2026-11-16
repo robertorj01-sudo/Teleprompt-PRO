@@ -66,6 +66,15 @@ export interface BackdropDef {
   recommendedOverlay: number;
 }
 
+export type TpBrasilModelId =
+  | 'none'
+  | 'tp19xpro'
+  | 'tp20ptz'
+  | 'minitp'
+  | 'presidencial';
+
+export type HardwareRemoteMode = 'standard' | 'presenter' | 'pedal' | 'shuttle';
+
 export interface TeleprompterSettings {
   speed: number;             // 1 a 100
   fontSize: number;          // 20 a 110 px
@@ -87,6 +96,11 @@ export interface TeleprompterSettings {
   backdropId: BackdropId;     // Pano de fundo virtual / estúdio
   backdropBlur: number;       // 0 a 16 px (efeito bokeh de lente de câmera)
   backdropOverlay: number;    // 0.2 a 0.95 (escurecimento para alto contraste de texto)
+  tpBrasilModel?: TpBrasilModelId;         // Perfil de hardware físico TP Brasil
+  hardwareRemoteMode?: HardwareRemoteMode; // Perfil de controle remoto / pedal / apresentador
+  cleanOutputMode?: boolean;               // Saída limpa para monitor / HDMI sem barras de UI
+  beamSplitterBoost?: boolean;             // Ganho de contraste e preto puro (#000) para vidro 70/30
+  blackoutScreen?: boolean;                // Blackout instantâneo de palco (TP Presidencial / Tecla B)
 }
 
 export interface SavedScript {

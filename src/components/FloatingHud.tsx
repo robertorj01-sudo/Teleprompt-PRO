@@ -8,6 +8,7 @@ import {
   Minus,
   Plus,
   FlipHorizontal,
+  FlipVertical,
   Eye,
   Maximize2,
   Minimize2,
@@ -115,13 +116,16 @@ export const FloatingHud: React.FC<FloatingHudProps> = ({
   };
 
   const toggleMirrorH = () => {
-    if (licenseStatus && !licenseStatus.isPro) {
-      onOpenUpgradeModal?.('mirror');
-      return;
-    }
     onUpdateSettings((prev) => ({
       ...prev,
       mirrorHorizontal: !prev.mirrorHorizontal,
+    }));
+  };
+
+  const toggleMirrorV = () => {
+    onUpdateSettings((prev) => ({
+      ...prev,
+      mirrorVertical: !prev.mirrorVertical,
     }));
   };
 
@@ -134,6 +138,8 @@ export const FloatingHud: React.FC<FloatingHudProps> = ({
       },
     }));
   };
+
+  if (settings.cleanOutputMode) return null;
 
   return (
     <div
@@ -226,7 +232,7 @@ export const FloatingHud: React.FC<FloatingHudProps> = ({
           </button>
         </div>
 
-        {/* Espelhamento H */}
+        {/* Espelhamento H & V */}
         <button
           onClick={toggleMirrorH}
           className={`p-2 rounded-xl transition-colors cursor-pointer ${
@@ -237,6 +243,18 @@ export const FloatingHud: React.FC<FloatingHudProps> = ({
           title={isEn ? 'Horizontal Mirror (M)' : 'Espelho Horizontal (M)'}
         >
           <FlipHorizontal className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={toggleMirrorV}
+          className={`p-2 rounded-xl transition-colors cursor-pointer ${
+            settings.mirrorVertical
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : 'bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white'
+          }`}
+          title={isEn ? 'Vertical Mirror (V)' : 'Espelho Vertical (V)'}
+        >
+          <FlipVertical className="w-4 h-4" />
         </button>
 
         {/* Linha Guia */}

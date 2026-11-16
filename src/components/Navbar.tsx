@@ -18,9 +18,12 @@ import {
   X,
   Download,
   Image,
+  UserPlus,
+  Tv,
 } from 'lucide-react';
+import type { User as FirebaseUser } from 'firebase/auth';
 import { PWAInstallButton } from './PWAInstallButton';
-import { LicenseStatus, STRIPE_CHECKOUT_URL } from '../types/teleprompter';
+import { LicenseStatus, STRIPE_CHECKOUT_URL, TpBrasilModelId } from '../types/teleprompter';
 import { AppLanguage } from '../utils/i18n';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -43,6 +46,10 @@ interface NavbarProps {
   isPlaying: boolean;
   licenseStatus: LicenseStatus;
   onOpenUpgradeModal: (feature?: string) => void;
+  authUser?: FirebaseUser | null;
+  onOpenAuthModal?: () => void;
+  onOpenHardware?: () => void;
+  activeHardwareModel?: TpBrasilModelId;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -64,6 +71,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   isPlaying,
   licenseStatus,
   onOpenUpgradeModal,
+  authUser = null,
+  onOpenAuthModal,
+  onOpenHardware,
+  activeHardwareModel = 'none',
 }) => {
   const isEn = lang === 'en';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -155,6 +166,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {onOpenHardware && (
+            <button
+              onClick={onOpenHardware}
+              className={`px-2.5 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer border ${
+                activeHardwareModel && activeHardwareModel !== 'none'
+                  ? 'text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40'
+                  : 'text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border-neutral-800'
+              }`}
+              title={
+                isEn
+                  ? 'TP Brasil Hardware Setup (TP19XPRO, TP20PTZ, Mini TP, Presidencial)'
+                  : 'Configurar Hardware TP Brasil (TP19XPRO, TP20PTZ, Mini TP, Presidencial)'
+              }
+            >
+              <Tv className={`w-3.5 h-3.5 ${activeHardwareModel && activeHardwareModel !== 'none' ? 'text-emerald-400' : 'text-amber-400'}`} />
+              <span>TP Brasil</span>
+            </button>
+          )}
+
           {onOpenVoiceGuide && (
             <button
               onClick={onOpenVoiceGuide}
@@ -241,6 +271,49 @@ export const Navbar: React.FC<NavbarProps> = ({
             <PWAInstallButton lang={lang} />
           </div>
 
+          {/* Account / Registration Button (visible on >=420px and inside mobile 3-dots menu on narrow screens) */}
+          {onOpenAuthModal && (
+            <button
+              onClick={onOpenAuthModal}
+              className={`hidden min-[420px]:flex items-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer shrink-0 border ${
+                authUser
+                  ? 'bg-neutral-900 hover:bg-neutral-800 border-emerald-500/40 text-neutral-100'
+                  : 'bg-neutral-900 hover:bg-neutral-800 border-neutral-800 text-neutral-200'
+              }`}
+              title={
+                authUser
+                  ? authUser.displayName || authUser.email || (isEn ? 'My Account' : 'Minha Conta')
+                  : isEn
+                  ? 'Sign Up / Sign In'
+                  : 'Cadastrar / Entrar'
+              }
+            >
+              {authUser ? (
+                authUser.photoURL ? (
+                  <img
+                    src={authUser.photoURL}
+                    alt={authUser.displayName || 'User'}
+                    referrerPolicy="no-referrer"
+                    className="w-4 h-4 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {(authUser.displayName || authUser.email || 'U').charAt(0).toUpperCase()}
+                  </span>
+                )
+              ) : (
+                <UserPlus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              )}
+              <span className="hidden md:inline max-w-[96px] truncate">
+                {authUser
+                  ? authUser.displayName?.split(' ')[0] || (isEn ? 'Account' : 'Conta')
+                  : isEn
+                  ? 'Sign Up'
+                  : 'Cadastrar'}
+              </span>
+            </button>
+          )}
+
           {/* Fullscreen Button */}
           <button
             onClick={onToggleFullscreen}
@@ -273,6 +346,35 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile Popover Menu */}
             {mobileMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl p-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                {onOpenAuthModal && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onOpenAuthModal();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-white bg-neutral-800/70 hover:bg-neutral-800 transition-colors text-left font-semibold mb-1"
+                    >
+                      {authUser ? (
+                        <>
+                          <span className="w-4 h-4 rounded-full bg-emerald-500/25 text-emerald-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {(authUser.displayName || authUser.email || 'U').charAt(0).toUpperCase()}
+                          </span>
+                          <span className="truncate">
+                            {authUser.displayName || authUser.email || (isEn ? 'My Account' : 'Minha Conta')}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>{isEn ? 'Sign Up / Sign In' : 'Cadastrar / Entrar'}</span>
+                        </>
+                      )}
+                    </button>
+                    <div className="my-1 border-t border-neutral-800/80" />
+                  </>
+                )}
+
                 {/* Fullscreen toggle inside menu for easy mobile access */}
                 <button
                   onClick={() => {
@@ -335,6 +437,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Image className="w-4 h-4 text-amber-400" />
                     <span>{isEn ? 'Virtual Backdrops' : 'Panos de Fundo & Cenários'}</span>
+                  </button>
+                )}
+
+                {onOpenHardware && (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenHardware();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-emerald-300 hover:bg-neutral-800 transition-colors text-left font-medium"
+                  >
+                    <Tv className="w-4 h-4 text-emerald-400" />
+                    <span>{isEn ? 'TP Brasil Hardware' : 'Hardware TP Brasil'}</span>
                   </button>
                 )}
 

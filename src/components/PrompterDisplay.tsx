@@ -21,6 +21,9 @@ interface PrompterDisplayProps {
   isRecording?: boolean;
   recordingDuration?: number;
   onStopRecording?: () => void;
+  onExitCleanOutput?: () => void;
+  onExitBlackout?: () => void;
+  isHdmiSlave?: boolean;
 }
 
 export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
@@ -39,6 +42,9 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
   isRecording = false,
   recordingDuration = 0,
   onStopRecording,
+  onExitCleanOutput,
+  onExitBlackout,
+  isHdmiSlave = false,
 }) => {
   const isEn = lang === 'en';
 
@@ -144,16 +150,21 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
 
   const cueColor = settings.cueLine.color || themeStyles.cueDefaultColor;
 
+  const isBoosted = Boolean(settings.beamSplitterBoost);
+  const isCleanOutput = Boolean(settings.cleanOutputMode) || isHdmiSlave;
+
   return (
     <div
-      className={`relative w-full h-full overflow-hidden select-none ${themeStyles.bg}`}
+      className={`relative w-full h-full overflow-hidden select-none ${
+        isBoosted ? 'bg-black' : themeStyles.bg
+      }`}
       style={{
         transform: transformStyle,
         transition: 'transform 0.2s ease-in-out',
       }}
     >
-      {/* Pano de Fundo Fotográfico / Cenário Virtual de Estúdio */}
-      {backdropDef && backdropDef.imageUrl && (
+      {/* Pano de Fundo Fotográfico / Cenário Virtual de Estúdio (oculto se Boost 70/30 ativo) */}
+      {!isBoosted && backdropDef && backdropDef.imageUrl && (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <img
             src={backdropDef.imageUrl}
@@ -337,9 +348,12 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
             return (
               <p
                 key={pIndex}
-                className="mb-8 font-normal transition-all"
+                className={`mb-8 transition-all ${
+                  isBoosted ? 'font-medium' : 'font-normal'
+                }`}
                 style={{
                   wordBreak: 'break-word',
+                  WebkitFontSmoothing: 'antialiased',
                 }}
               >
                 {segments.map((seg, sIndex) => {
@@ -462,16 +476,44 @@ export const PrompterDisplay: React.FC<PrompterDisplayProps> = ({
         </div>
       )}
 
-      {/* Barra de Progresso Fina no Topo */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-white/10 z-40">
+      {/* Barra de Progresso Fina no Topo (oculta na Saída Limpa HDMI) */}
+      {!isCleanOutput && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-white/10 z-40">
+          <div
+            className="h-full transition-all duration-100 ease-out"
+            style={{
+              width: `${scrollProgress}%`,
+              backgroundColor: cueColor,
+            }}
+          />
+        </div>
+      )}
+
+      {/* Botão Discreto (Hover) para Sair da Saída Limpa HDMI */}
+      {isCleanOutput && !isHdmiSlave && onExitCleanOutput && (
+        <button
+          onClick={onExitCleanOutput}
+          className="absolute top-3 left-3 z-40 px-3 py-1.5 rounded-full bg-neutral-900/70 hover:bg-neutral-800 border border-white/15 text-[11px] font-semibold text-neutral-300 opacity-15 hover:opacity-100 transition-opacity cursor-pointer"
+          title={isEn ? 'Exit Clean HDMI Output (H)' : 'Sair da Saída Limpa HDMI (H)'}
+        >
+          {isEn ? 'Exit Clean Output (H)' : 'Sair Saída Limpa (H)'}
+        </button>
+      )}
+
+      {/* Blackout Instantâneo de Palco (TP Presidencial / Tecla B) */}
+      {settings.blackoutScreen && (
         <div
-          className="h-full transition-all duration-100 ease-out"
-          style={{
-            width: `${scrollProgress}%`,
-            backgroundColor: cueColor,
-          }}
-        />
-      </div>
+          onClick={onExitBlackout}
+          className="absolute inset-0 z-50 bg-black flex items-end justify-center p-6 cursor-pointer"
+          title={isEn ? 'Click or press B to restore text' : 'Clique ou pressione B para restaurar o texto'}
+        >
+          {!isHdmiSlave && (
+            <span className="text-[11px] font-mono text-neutral-700 hover:text-neutral-400 transition-colors select-none">
+              {isEn ? 'Blackout Active — Press B or click to resume' : 'Blackout Ativo — Pressione B ou clique para retornar'}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

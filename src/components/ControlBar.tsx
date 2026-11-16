@@ -33,9 +33,12 @@ import {
   Sparkles,
   Check,
   Image,
+  Tv,
+  Radio,
 } from 'lucide-react';
 import { VIDEO_FILTERS, getVideoFilterDef } from '../utils/videoFilters';
 import { BACKDROP_THEMES, getBackdropDef } from '../utils/backdropThemes';
+import { getTpBrasilProfile } from '../utils/tpBrasilHardware';
 
 interface ControlBarProps {
   lang: AppLanguage;
@@ -61,6 +64,7 @@ interface ControlBarProps {
   isRecording?: boolean;
   onStartRecording?: () => void;
   onStopRecording?: () => void;
+  onOpenHardwareModal?: () => void;
 }
 
 export const ControlBar: React.FC<ControlBarProps> = ({
@@ -85,6 +89,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   isRecording = false,
   onStartRecording,
   onStopRecording,
+  onOpenHardwareModal,
 }) => {
   const isEn = lang === 'en';
   const [activeTab, setActiveTab] = useState<'quick' | 'typography' | 'cue' | 'backdrop' | 'studio'>('quick');
@@ -680,25 +685,28 @@ export const ControlBar: React.FC<ControlBarProps> = ({
         {activeTab === 'studio' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
-            {/* Espelhamento Óptico (Flip X / Flip Y) */}
+            {/* Espelhamento Óptico (Flip X / Flip Y) - Liberado automaticamente para Hardware TP Brasil */}
             <div className="bg-neutral-800/40 p-3 rounded-xl border border-neutral-800">
               <div className="flex items-center justify-between mb-2">
                 <span className="block text-xs font-semibold text-neutral-200">
                   {isEn ? 'Optical Mirror' : 'Espelhamento (Mirror)'}
                 </span>
-                {licenseStatus && !licenseStatus.isPro && (
-                  <span className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5">
-                    <Lock className="w-2.5 h-2.5" /> PRO
+                {settings.tpBrasilModel && settings.tpBrasilModel !== 'none' ? (
+                  <span className="text-[10px] font-bold text-emerald-400">
+                    {getTpBrasilProfile(settings.tpBrasilModel)?.name}
                   </span>
+                ) : (
+                  licenseStatus &&
+                  !licenseStatus.isPro && (
+                    <span className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5">
+                      <Lock className="w-2.5 h-2.5" /> PRO / HW
+                    </span>
+                  )
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    if (licenseStatus && !licenseStatus.isPro) {
-                      onOpenUpgradeModal?.('mirror');
-                      return;
-                    }
                     updateField('mirrorHorizontal', !settings.mirrorHorizontal);
                   }}
                   className={`flex-1 py-1.5 px-2 rounded flex items-center justify-center gap-1.5 text-xs font-medium border transition-colors cursor-pointer ${
@@ -718,10 +726,6 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
                 <button
                   onClick={() => {
-                    if (licenseStatus && !licenseStatus.isPro) {
-                      onOpenUpgradeModal?.('mirror');
-                      return;
-                    }
                     updateField('mirrorVertical', !settings.mirrorVertical);
                   }}
                   className={`flex-1 py-1.5 px-2 rounded flex items-center justify-center gap-1.5 text-xs font-medium border transition-colors cursor-pointer ${
@@ -729,7 +733,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                       : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white'
                   }`}
-                  title={isEn ? 'Flip vertically' : 'Inverter verticalmente'}
+                  title={isEn ? 'Flip vertically for bottom tray beam-splitter (V)' : 'Inverter verticalmente para vidro beam-splitter (Tecla V)'}
                 >
                   <FlipVertical className="w-3.5 h-3.5" />
                   <span>{isEn ? 'Mirror V' : 'Espelho V'}</span>
@@ -888,6 +892,64 @@ export const ControlBar: React.FC<ControlBarProps> = ({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Seção Rápida: Hardware Físico TP Brasil (tpbrasil.com.br) */}
+          <div className="mt-4 pt-3 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <Tv className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>{isEn ? 'TP Brasil Hardware Compatibility' : 'Compatibilidade Hardware TP Brasil'}</span>
+                  {settings.tpBrasilModel && settings.tpBrasilModel !== 'none' && (
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+                      {getTpBrasilProfile(settings.tpBrasilModel)?.name}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] text-neutral-400 block">
+                  {isEn
+                    ? 'TP19XPRO · TP20PTZ · Mini TP · TP Presidencial · Pedals & Bluetooth Remotes'
+                    : 'TP19XPRO · TP20PTZ · Mini TP · TP Presidencial · Pedais & Controles Bluetooth'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => updateField('beamSplitterBoost', !settings.beamSplitterBoost)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  settings.beamSplitterBoost
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                    : 'bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white'
+                }`}
+              >
+                {isEn ? '70/30 Glass Boost' : 'Boost Vidro 70/30'}
+              </button>
+
+              <button
+                onClick={() => updateField('cleanOutputMode', !settings.cleanOutputMode)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  settings.cleanOutputMode
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                    : 'bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white'
+                }`}
+              >
+                {isEn ? 'Clean HDMI (H)' : 'Saída Limpa HDMI (H)'}
+              </button>
+
+              {onOpenHardwareModal && (
+                <button
+                  onClick={onOpenHardwareModal}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Radio className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Configure Hardware' : 'Configurar TP Brasil'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

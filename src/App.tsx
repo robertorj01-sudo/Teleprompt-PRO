@@ -24,8 +24,13 @@ import { VoiceCommandOverlay } from './components/VoiceCommandOverlay';
 import { VoiceCommandsModal } from './components/VoiceCommandsModal';
 import { UpgradeProModal } from './components/UpgradeProModal';
 import { RecordedVideoModal } from './components/RecordedVideoModal';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth, syncUserProfileToFirestore } from './firebase';
 import { MobileTestModal } from './components/MobileTestModal';
 import { BackdropModal } from './components/BackdropModal';
+import { AuthModal } from './components/AuthModal';
+import { TpBrasilHardwareModal } from './components/TpBrasilHardwareModal';
+import { useHardwareRemote } from './hooks/useHardwareRemote';
 
 const DEFAULT_SETTINGS: TeleprompterSettings = {
   speed: 28,
@@ -54,6 +59,11 @@ const DEFAULT_SETTINGS: TeleprompterSettings = {
   backdropId: 'none',
   backdropBlur: 4,
   backdropOverlay: 0.65,
+  tpBrasilModel: 'none',
+  hardwareRemoteMode: 'standard',
+  cleanOutputMode: false,
+  beamSplitterBoost: false,
+  blackoutScreen: false,
 };
 
 export default function App() {
@@ -168,6 +178,31 @@ export default function App() {
   const [isGooglePlayOpen, setIsGooglePlayOpen] = useState<boolean>(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
   const [isBackdropModalOpen, setIsBackdropModalOpen] = useState<boolean>(false);
+  const [isHardwareModalOpen, setIsHardwareModalOpen] = useState<boolean>(false);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  // Detecta modo 2ª Tela HDMI Sincronizada (?mode=hdmi) para monitores TP Brasil
+  const isHdmiSlaveMode =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('mode') === 'hdmi';
+
+  // Listener de autenticação Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setAuthUser(user);
+      setIsAuthReady(true);
+      if (user && user.emailVerified) {
+        try {
+          await syncUserProfileToFirestore(user);
+        } catch (err) {
+          console.error('Erro ao sincronizar perfil no Firestore:', err);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Salva no LocalStorage sempre que houver alterações
   useEffect(() => {
@@ -203,6 +238,65 @@ export default function App() {
     isPlaying: isPlaying && !isCountingDown,
     onEndReached: handleEndReached,
   });
+
+  // Sincronização em tempo real com 2ª Tela HDMI (TP19XPRO, TP20PTZ, TP Presidencial)
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('tpbrasil_hw_sync');
+
+    if (isHdmiSlaveMode) {
+      channel.onmessage = (event) => {
+        const msg = event.data;
+        if (!msg || msg.type !== 'SYNC_STATE') return;
+        setContent(msg.content);
+        setSettings(msg.settings);
+        setIsPlaying(msg.isPlaying);
+        setIsCountingDown(msg.isCountingDown);
+        setCountdownValue(msg.countdownValue);
+        if (
+          containerRef.current &&
+          typeof msg.scrollTop === 'number' &&
+          Math.abs(containerRef.current.scrollTop - msg.scrollTop) > 4
+        ) {
+          containerRef.current.scrollTop = msg.scrollTop;
+        }
+      };
+      channel.postMessage({ type: 'REQUEST_SYNC' });
+    } else {
+      const broadcastState = () => {
+        channel.postMessage({
+          type: 'SYNC_STATE',
+          content,
+          settings,
+          isPlaying,
+          isCountingDown,
+          countdownValue,
+          scrollTop: containerRef.current?.scrollTop ?? 0,
+        });
+      };
+
+      broadcastState();
+
+      channel.onmessage = (event) => {
+        if (event.data?.type === 'REQUEST_SYNC') {
+          broadcastState();
+        }
+      };
+    }
+
+    return () => {
+      channel.close();
+    };
+  }, [
+    isHdmiSlaveMode,
+    content,
+    settings,
+    isPlaying,
+    isCountingDown,
+    countdownValue,
+    scrollProgress,
+    containerRef,
+  ]);
 
   // Métricas do texto
   const wordCount = countWords(content);
@@ -324,10 +418,6 @@ export default function App() {
       handleRestart();
     },
     onToggleMirror: () => {
-      if (!licenseStatus.isPro) {
-        openUpgradeModal('mirror');
-        return;
-      }
       setSettings((prev) => ({
         ...prev,
         mirrorHorizontal: !prev.mirrorHorizontal,
@@ -494,10 +584,6 @@ export default function App() {
 
         case 'KeyM':
           e.preventDefault();
-          if (!licenseStatus.isPro) {
-            openUpgradeModal('mirror');
-            break;
-          }
           setSettings((prev) => ({
             ...prev,
             mirrorHorizontal: !prev.mirrorHorizontal,
@@ -544,8 +630,16 @@ export default function App() {
           if (isPlaying) {
             setIsPlaying(false);
           }
+          if (settings.blackoutScreen) {
+            setSettings((prev) => ({ ...prev, blackoutScreen: false }));
+          }
+          if (settings.cleanOutputMode) {
+            setSettings((prev) => ({ ...prev, cleanOutputMode: false }));
+          }
           if (isLibraryOpen) setIsLibraryOpen(false);
           if (isShortcutsOpen) setIsShortcutsOpen(false);
+          if (isAuthModalOpen) setIsAuthModalOpen(false);
+          if (isHardwareModalOpen) setIsHardwareModalOpen(false);
           break;
 
         default:
@@ -565,19 +659,73 @@ export default function App() {
     isPlaying,
     isLibraryOpen,
     isShortcutsOpen,
-    licenseStatus.isPro,
+    isAuthModalOpen,
+    isHardwareModalOpen,
+    settings.blackoutScreen,
+    settings.cleanOutputMode,
   ]);
+
+  // Suporte a controles físicos TP Brasil (Apresentadores Bluetooth, Pedais AirTurn/USB, Numpad/Shuttle, Gamepads)
+  const hardwareRemote = useHardwareRemote({
+    mode: settings.hardwareRemoteMode || 'standard',
+    enabled: !isHdmiSlaveMode,
+    onTogglePlay: handleTogglePlay,
+    onSpeedDelta: (delta) =>
+      setSettings((prev) => ({
+        ...prev,
+        speed: Math.max(1, Math.min(100, prev.speed + delta)),
+      })),
+    onJump: jump,
+    onRestart: handleRestart,
+    onToggleMirrorH: () =>
+      setSettings((prev) => ({ ...prev, mirrorHorizontal: !prev.mirrorHorizontal })),
+    onToggleMirrorV: () =>
+      setSettings((prev) => ({ ...prev, mirrorVertical: !prev.mirrorVertical })),
+    onToggleBlackout: () =>
+      setSettings((prev) => ({ ...prev, blackoutScreen: !prev.blackoutScreen })),
+    onToggleCleanOutput: () =>
+      setSettings((prev) => ({ ...prev, cleanOutputMode: !prev.cleanOutputMode })),
+    onFontDelta: (delta) =>
+      setSettings((prev) => ({
+        ...prev,
+        fontSize: Math.max(18, Math.min(100, prev.fontSize + delta)),
+      })),
+  });
 
   const formattedElapsed = formatTime(elapsedSeconds);
   const formattedEstimated = formatTime(estimatedTotalSeconds);
+
+  // Modo Dedicado de 2ª Tela HDMI TP Brasil (?mode=hdmi)
+  if (isHdmiSlaveMode) {
+    return (
+      <div className="h-screen w-screen bg-black overflow-hidden">
+        <PrompterDisplay
+          lang={lang}
+          content={content}
+          settings={settings}
+          containerRef={containerRef}
+          scrollProgress={scrollProgress}
+          isAtEnd={isAtEnd}
+          onRestart={handleRestart}
+          onManualScroll={handleManualScroll}
+          isCountingDown={isCountingDown}
+          countdownValue={countdownValue}
+          isPlaying={isPlaying}
+          isHdmiSlave={true}
+        />
+      </div>
+    );
+  }
+
+  const hideChrome = isFullscreen || (currentView === 'prompter' && Boolean(settings.cleanOutputMode));
 
   return (
     <div className="flex flex-col h-screen w-screen bg-black text-neutral-100 overflow-hidden font-sans">
       {/* Indicador de Conexão Offline */}
       <OfflineIndicator lang={lang} />
 
-      {/* Barra de Navegação Superior (ocultada se em tela cheia no modo apresentação) */}
-      {!isFullscreen && (
+      {/* Barra de Navegação Superior (ocultada em tela cheia ou saída limpa HDMI) */}
+      {!hideChrome && (
         <Navbar
           lang={lang}
           onToggleLang={handleToggleLanguage}
@@ -589,6 +737,8 @@ export default function App() {
           onOpenMobileTest={() => setIsMobileTestOpen(true)}
           onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
           onOpenBackdrops={() => setIsBackdropModalOpen(true)}
+          onOpenHardware={() => setIsHardwareModalOpen(true)}
+          activeHardwareModel={settings.tpBrasilModel || 'none'}
           isListeningVoice={voiceControl.isListening}
           onToggleVoice={voiceControl.toggleListening}
           onToggleFullscreen={toggleFullscreen}
@@ -597,6 +747,8 @@ export default function App() {
           isPlaying={isPlaying}
           licenseStatus={licenseStatus}
           onOpenUpgradeModal={openUpgradeModal}
+          authUser={isAuthReady ? authUser : null}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
         />
       )}
 
@@ -637,6 +789,12 @@ export default function App() {
                 isRecording={videoRecorder.isRecording}
                 recordingDuration={videoRecorder.recordingDuration}
                 onStopRecording={handleStopRecording}
+                onExitCleanOutput={() =>
+                  setSettings((prev) => ({ ...prev, cleanOutputMode: false }))
+                }
+                onExitBlackout={() =>
+                  setSettings((prev) => ({ ...prev, blackoutScreen: false }))
+                }
               />
 
               {/* Overlay de Status e Feedback de Comandos por Voz */}
@@ -691,8 +849,8 @@ export default function App() {
               />
             </div>
 
-            {/* Barra de Ajustes Inferior (apenas se NÃO estiver em Fullscreen) */}
-            {!isFullscreen && (
+            {/* Barra de Ajustes Inferior (apenas se NÃO estiver em Fullscreen ou Saída Limpa HDMI) */}
+            {!hideChrome && (
               <ControlBar
                 lang={lang}
                 settings={settings}
@@ -709,6 +867,7 @@ export default function App() {
                 formattedEstimated={formattedEstimated}
                 scrollProgress={scrollProgress}
                 onOpenBackdropModal={() => setIsBackdropModalOpen(true)}
+                onOpenHardwareModal={() => setIsHardwareModalOpen(true)}
                 isListeningVoice={voiceControl.isListening}
                 onToggleVoice={voiceControl.toggleListening}
                 onOpenVoiceGuide={() => setIsVoiceModalOpen(true)}
@@ -808,6 +967,31 @@ export default function App() {
         lang={lang}
         settings={settings}
         onUpdateSettings={setSettings}
+      />
+
+      {/* Modal de Cadastro & Login (Google, Apple, Microsoft, Work Email) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        lang={lang}
+        user={authUser}
+        licenseStatus={licenseStatus}
+        onOpenUpgradeModal={openUpgradeModal}
+      />
+
+      {/* Modal de Configuração e Compatibilidade Hardware TP Brasil */}
+      <TpBrasilHardwareModal
+        isOpen={isHardwareModalOpen}
+        onClose={() => setIsHardwareModalOpen(false)}
+        lang={lang}
+        settings={settings}
+        onUpdateSettings={setSettings}
+        onLaunchPrompterClean={() => {
+          setSettings((prev) => ({ ...prev, cleanOutputMode: true }));
+          setCurrentView('prompter');
+        }}
+        connectedGamepads={hardwareRemote.connectedGamepads}
+        lastHardwareSignal={hardwareRemote.lastSignal}
       />
     </div>
   );
